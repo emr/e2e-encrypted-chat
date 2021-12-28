@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width" />
+    <title>Chat End-to-end Encrypted</title>
+    <!-- Style dependencies -->
+    <link href="css/vendor/normalize.min.css" rel="stylesheet" />
+    <!-- Blueprint stylesheets -->
+    <link href="https://unpkg.com/@blueprintjs/icons@^3.4.0/lib/css/blueprint-icons.css" rel="stylesheet" />
+    <link href="css/vendor/blueprint.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container">
+    <nav class="navbar bp3-navbar">
+        <div class="bp3-navbar-group bp3-align-left">
+            <button class="bp3-button bp3-minimal bp3-icon-chat">Chat End-to-end Encrypted</button>
+        </div>
+        <div class="bp3-navbar-group bp3-align-right">
+            <button class="bp3-button bp3-minimal bp3-icon-moon" data-action="dark-theme">Dark</button>
+            <button class="bp3-button bp3-minimal bp3-icon-flash" data-action="light-theme" aria-hidden="true" hidden>Light</button>
+            <span class="bp3-navbar-divider"></span>
+            <button class="bp3-button bp3-minimal bp3-icon-user" data-action="login" data-state="login">Login</button>
+            <button class="bp3-button bp3-minimal bp3-icon-user" data-action="logout" data-state="chat" aria-hidden="true" hidden>Logout</button>
+        </div>
+    </nav>
+    <div class="bp3-non-ideal-state" data-state="login">
+        <div class="bp3-non-ideal-state-visual">
+            <span class="bp3-icon bp3-icon-chat"></span>
+        </div>
+        <h4 class="bp3-heading">Not logged in</h4>
+        <div>Please login to start chat</div>
+        <div class="bp3-form-group">
+            <div class="bp3-form-content">
+                <label class="bp3-input-group">
+                    <span class="bp3-icon bp3-icon-user"></span>
+                    <input type="text" class="bp3-input" placeholder="Enter your name" dir="auto" data-input="username" />
+                </label>
+            </div>
+        </div>
+        <button class="bp3-button bp3-intent-primary" data-action="login">Login</button>
+    </div>
+    <div data-state="chat" aria-hidden="true" hidden>
+        <div class="chat-content">
+            <div data-state="chat-empty" aria-hidden="true" hidden>
+                <div class="bp3-non-ideal-state">
+                    <div class="bp3-non-ideal-state-visual">
+                        <span class="bp3-icon bp3-icon-chat"></span>
+                    </div>
+                    <h4 class="bp3-heading">Chat is empty</h4>
+                    <div>Send a new message via the input below</div>
+                </div>
+            </div>
+        </div>
+        <div class="new-msg-details">
+            <div class="bp3-control-group mt-10">
+                <div class="bp3-tag">
+                    <span data-variable="username"></span>
+                    <span class="bp3-icon bp3-icon-chevron-right"></span>
+                </div>
+                <label class="bp3-input-group bp3-fill">
+                    <input class="bp3-input" data-input="new-msg" placeholder="Your message"/>
+                </label>
+                <button class="bp3-button" data-action="send-new-msg">
+                    <span class="bp3-icon bp3-icon-arrow-right"></span>
+                </button>
+                <div role="button" class="bp3-button bp3-disabled bp3-loading" tabindex="-1" data-loading="send-new-msg" aria-hidden="true" hidden>
+                    <div class="bp3-spinner bp3-button-spinner" role="progressbar">
+                        <div class="bp3-spinner-animation">
+                            <svg width="20" height="20" stroke-width="16.00" viewBox="-3.00 -3.00 106.00 106.00"><path class="bp3-spinner-track" d="M 50,50 m 0,-45 a 45,45 0 1 1 0,90 a 45,45 0 1 1 0,-90"></path><path class="bp3-spinner-head" d="M 50,50 m 0,-45 a 45,45 0 1 1 0,90 a 45,45 0 1 1 0,-90" pathLength="280" stroke-dasharray="280 280" stroke-dashoffset="210"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tabs bp3-tabs mt-10">
+                <div class="bp3-button-group" role="tablist">
+                    <button type="button" class="bp3-button bp3-minimal bp3-outlined bp3-icon-lock bp3-active" role="tab" aria-selected="true" aria-controls="new-msg-security">Security</button>
+                    <button type="button" class="bp3-button bp3-minimal bp3-outlined bp3-icon-paperclip" role="tab" aria-controls="new-msg-attach">File</button>
+                </div>
+                <div id="new-msg-security" class="new-msg-security bp3-tab-panel bp3-card mt-10 p-10" role="tabpanel" aria-labelledby="tab-btn-new-msg-security">
+                    <div class="bp3-control-group">
+                        <div class="bp3-html-select">
+                            <label>
+                                <select data-input="encryption-algorithm">
+                                    <option value="" selected>Algorithm</option>
+                                    <option value="sha256">SHA-256</option>
+                                    <option value="spn">SPN</option>
+                                </select>
+                            </label>
+                            <span class="bp3-icon bp3-icon-double-caret-vertical"></span>
+                        </div>
+                        <div class="bp3-control-group bp3-numeric-input">
+                            <div class="bp3-input-group">
+                                <label>
+                                    <input type="text" placeholder="Secret key" autocomplete="off" class="bp3-input" data-input="encryption-secret-key">
+                                </label>
+                            </div>
+                            <a role="button" class="bp3-button bp3-intent-warning bp3-icon-unlock" data-state="not-encrypted" data-action="lock-encryption">Encrypt</a>
+                            <a role="button" class="bp3-button bp3-intent-success bp3-icon-lock" data-state="encrypted" data-action="unlock-encryption" aria-hidden="true" hidden>Encrypted</a>
+                        </div>
+                    </div>
+                    <span class="bp3-tag mt-10" data-state="encrypted" aria-hidden="true" hidden>Cipher Text</span>
+                    <div class="bp3-code-block mb-0" data-state="encrypted" data-variable="ciphertext" aria-hidden="true" hidden></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="bp3-portal">
+    <div aria-live="polite" class="bp3-overlay bp3-overlay-open bp3-toast-container bp3-toast-container-top bp3-toast-container-in-portal"></div>
+</div>
+<script src="js/vendor/crypto-js.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

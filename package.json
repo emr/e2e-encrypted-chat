@@ -1,0 +1,21 @@
+{
+  "name": "e2e-encrypted-messaging",
+  "version": "1.0.0",
+  "description": "Yazilim Yapimi dersi icin uctan uca sifreli mesajlasma programi",
+  "repository": "https://github.com/emr/yazilim-yapimi-mesajlasma",
+  "license": "MIT",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "express": "^4.17.2",
+    "express-session": "^1.17.2",
+    "uuid": "^8.3.2",
+    "ws": "^8.4.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.2.2"
+  }
+}
