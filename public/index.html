@@ -62,7 +62,7 @@
                 <label class="bp3-input-group bp3-fill">
                     <input class="bp3-input" data-input="new-msg" placeholder="Your message"/>
                 </label>
-                <button class="bp3-button" data-action="send-new-msg">
+                <button class="bp3-button bp3-intent-primary" data-action="send-new-msg">
                     <span class="bp3-icon bp3-icon-arrow-right"></span>
                 </button>
                 <div role="button" class="bp3-button bp3-disabled bp3-loading" tabindex="-1" data-loading="send-new-msg" aria-hidden="true" hidden>
@@ -102,6 +102,22 @@
                     </div>
                     <span class="bp3-tag mt-10" data-state="encrypted" aria-hidden="true" hidden>Cipher Text</span>
                     <div class="bp3-code-block mb-0" data-state="encrypted" data-variable="ciphertext" aria-hidden="true" hidden></div>
+                </div>
+                <div id="new-msg-attach" class="new-msg-attach bp3-tab-panel bp3-card mt-10 p-10 display-flex" role="tabpanel" aria-labelledby="tab-btn-new-msg-attach" aria-hidden="true" hidden>
+                    <label class="bp3-file-input mr-10">
+                        <input type="file" data-input="new-msg-file" />
+                        <span class="bp3-file-upload-input" data-state="file-not-selected">Choose file...</span>
+                        <span class="bp3-file-upload-input" data-state="file-selected" data-variable="selected-file-name" aria-hidden="true" hidden></span>
+                    </label>
+                    <button class="bp3-button bp3-icon-upload bp3-intent-primary" data-action="send-file">Send</button>
+                    <div role="button" class="bp3-button bp3-intent-primary bp3-disabled bp3-loading" tabindex="-1" data-loading="send-file" aria-hidden="true" hidden>
+                        <div class="bp3-spinner bp3-button-spinner" role="progressbar">
+                            <div class="bp3-spinner-animation">
+                                <svg width="20" height="20" stroke-width="16.00" viewBox="-3.00 -3.00 106.00 106.00"><path class="bp3-spinner-track" d="M 50,50 m 0,-45 a 45,45 0 1 1 0,90 a 45,45 0 1 1 0,-90"></path><path class="bp3-spinner-head" d="M 50,50 m 0,-45 a 45,45 0 1 1 0,90 a 45,45 0 1 1 0,-90" pathLength="280" stroke-dasharray="280 280" stroke-dashoffset="210"></path></svg>
+                            </div>
+                        </div>
+                        Sending
+                    </div>
                 </div>
             </div>
         </div>

@@ -26,7 +26,7 @@ app.use(
   express.urlencoded({
     extended: true
   })
-)
+);
 
 // Web client'lar için session parser
 const sessionParser = session({
@@ -109,9 +109,10 @@ wsServer.on('connection', function (wsClient, request) {
   addNewMessage(new Message(`${user.id} joined`, undefined, new Date(), true));
 
   // Kullanıcıdan mesaj geldiğinde
-  wsClient.on('message', function (content) {
+  wsClient.on('message', function (raw) {
     console.log(`Received message from user ${user.id}`);
-    addNewMessage(new Message(content.toString(), user, new Date()));
+    const message = JSON.parse(raw.toString());
+    addNewMessage(new Message(message.content, user, new Date(), undefined, message.isFile));
   });
 
   // Bağlantı kapatıldığında

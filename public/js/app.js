@@ -4,28 +4,34 @@ const stateElements = {
   chatEmpty: () => document.querySelectorAll('[data-state="chat-empty"]'),
   encrypted: () => document.querySelectorAll('[data-state="encrypted"]'),
   notEncrypted: () => document.querySelectorAll('[data-state="not-encrypted"]'),
+  fileSelected: () => document.querySelectorAll('[data-state="file-selected"]'),
+  fileNotSelected: () => document.querySelectorAll('[data-state="file-not-selected"]'),
 };
 
 const actionButtons = {
   logout: document.querySelectorAll('[data-action="logout"]'),
   login: document.querySelectorAll('[data-action="login"]'),
   sendNewMsg: document.querySelectorAll('[data-action="send-new-msg"]'),
+  sendFile: document.querySelectorAll('[data-action="send-file"]'),
   lockEncryption: document.querySelectorAll('[data-action="lock-encryption"]'),
   unlockEncryption: document.querySelectorAll('[data-action="unlock-encryption"]'),
 };
 
 const loadingElements = {
   sendNewMsg: document.querySelectorAll('[data-loading="send-new-msg"]'),
+  sendFile: document.querySelectorAll('[data-loading="send-file"]'),
 };
 
 const variableElements = {
   username: document.querySelectorAll('[data-variable="username"]'),
   ciphertext: document.querySelectorAll('[data-variable="ciphertext"]'),
+  selectedFileName: document.querySelectorAll('[data-variable="selected-file-name"]'),
 };
 
 const inputs = {
   username: document.querySelector('[data-input="username"]'),
   newMsg: document.querySelector('[data-input="new-msg"]'),
+  newMsgFile: document.querySelector('[data-input="new-msg-file"]'),
   encryptionAlgorithm: document.querySelector('[data-input="encryption-algorithm"]'),
   encryptionSecretKey: document.querySelector('[data-input="encryption-secret-key"]'),
 };
@@ -56,6 +62,9 @@ window.updateVariables = () => {
   variableElements.ciphertext.forEach((element) => {
     element.innerHTML = stateData.newMsgCiphertext;
   });
+  variableElements.selectedFileName.forEach((element) => {
+    element.innerHTML = inputs.newMsgFile.files[0]?.name;
+  });
 }
 
 window.updateView = (state) => {
@@ -75,10 +84,38 @@ window.updateView = (state) => {
       hideElements(actionButtons.sendNewMsg);
       showElements(loadingElements.sendNewMsg);
       break;
-    case 'message-loaded':
+    case 'message-received':
+      hideElements(stateElements.chatEmpty());
+      break;
+    case 'message-sent':
       hideElements(loadingElements.sendNewMsg);
       showElements(actionButtons.sendNewMsg);
-      hideElements(stateElements.chatEmpty());
+      break;
+    case 'file-selected':
+      hideElements(stateElements.fileNotSelected());
+      showElements(stateElements.fileSelected());
+      break;
+    case 'file-not-selected':
+      hideElements(stateElements.fileSelected());
+      showElements(stateElements.fileNotSelected());
+      break;
+    case 'file-uploading':
+      hideElements(actionButtons.sendNewMsg);
+      showElements(loadingElements.sendNewMsg);
+      hideElements(actionButtons.sendFile);
+      showElements(loadingElements.sendFile);
+      break;
+    case 'file-upload-failed':
+      hideElements(loadingElements.sendNewMsg);
+      showElements(actionButtons.sendNewMsg);
+      showElements(actionButtons.sendFile);
+      hideElements(loadingElements.sendFile);
+      break;
+    case 'file-uploaded':
+      hideElements(loadingElements.sendNewMsg);
+      showElements(actionButtons.sendNewMsg);
+      showElements(actionButtons.sendFile);
+      hideElements(loadingElements.sendFile);
       break;
     case 'chat-encrypted':
       hideElements(stateElements.notEncrypted());
@@ -93,7 +130,7 @@ window.updateView = (state) => {
   }
 };
 
-const encryptMessageContent = (content) => {
+const encryptContent = (content) => {
   switch (stateData.encryption?.algorithm) {
     case 'sha256':
       return CryptoJS.SHA256(content);
@@ -104,12 +141,16 @@ const encryptMessageContent = (content) => {
   }
 };
 
-const decryptMessageContent = (content) => {
+const decryptContent = (content) => {
   if (stateData.encryption?.algorithm !== 'spn') {
     return content;
   }
-  const bytes = CryptoJS.AES.decrypt(content, stateData.encryption.secretKey);
-  return bytes.toString(CryptoJS.enc.Utf8);
+  try {
+    const bytes = CryptoJS.AES.decrypt(content, stateData.encryption.secretKey);
+    return bytes.toString(CryptoJS.enc.Utf8) || false;
+  } catch (e) {
+    return false;
+  }
 };
 
 const startWsClient = () => {
@@ -136,7 +177,13 @@ const startWsClient = () => {
     const message = JSON.parse(msg.data.toString());
     stateData.messages.push(message);
     addMessageToChatContent(message);
-    updateState('message-loaded');
+    updateState('message-received');
+    if (message.from === stateData.loggedUser) {
+      updateState('message-sent');
+    }
+    if (message.isFile && message.from === stateData.loggedUser) {
+      updateState('file-uploaded');
+    }
   };
 };
 
@@ -144,8 +191,29 @@ const sendCurrentMessage = () => {
   if (!stateData.newMsgCiphertext) {
     return;
   }
-  wsClient.send(stateData.newMsgCiphertext);
   updateState('message-sending');
+  wsClient.send(JSON.stringify({ content: stateData.newMsgCiphertext }));
+};
+
+const sendCurrentFile = () => {
+  const file = inputs.newMsgFile.files[0];
+  if (!file) {
+    return;
+  }
+  updateState('file-uploading');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    updateState('message-sending');
+    wsClient.send(JSON.stringify({
+      content: encryptContent(e.target.result),
+      isFile: true,
+    }));
+  };
+  reader.onerror = () => {
+    addToast('An error occurred while reading the file content. Please try again', 'danger');
+    updateState('file-upload-failed');
+  };
+  reader.readAsDataURL(file);
 };
 
 const updateNewMsgButtonState = () => {
@@ -160,48 +228,56 @@ const updateNewMsgButtonState = () => {
 
 const onNewMsgChanged = () => {
   updateNewMsgButtonState();
-  stateData.newMsgCiphertext = encryptMessageContent(inputs.newMsg.value);
+  stateData.newMsgCiphertext = encryptContent(inputs.newMsg.value);
   updateVariables();
 };
 
 const onAlgorithmChanged = () => {
-  stateData.newMsgCiphertext = encryptMessageContent(inputs.newMsg.value);
+  stateData.newMsgCiphertext = encryptContent(inputs.newMsg.value);
   updateVariables();
 };
 
 const addMessageToChatContent = (message) => {
-  const { msg: content, from, date, isEvent } = message;
+  const { msg, from, date, isEvent, isFile } = message;
   const formattedDate = new Date(date).toLocaleTimeString();
   let dom;
   if (isEvent) {
     dom = `
       <div class="msg-row ta-center">
-        <div class="msg bp3-tag">${content}</div>
-      </div>
-    `;
-  }
-  else if (from === stateData.loggedUser) {
-    dom = `
-      <div class="msg-row msg-outgoing">
-        <div class="msg bp3-callout bp3-intent-primary">
-          <div>${decryptMessageContent(content)}</div>
-          <span class="bp3-text-disabled">from</span>
-          <span class="bp3-text-muted">${from}</span>
-          <span class="bp3-text-disabled">at ${formattedDate}</span>
-        </div>
+        <div class="msg bp3-tag">${msg}</div>
       </div>
     `;
   } else {
-    dom = `
-      <div class="msg-row msg-incoming">
-        <div class="msg bp3-callout">
-          <div>${decryptMessageContent(content)}</div>
-          <span class="bp3-text-disabled">from</span>
-          <span class="bp3-text-muted">${from}</span>
-          <span class="bp3-text-disabled">at ${formattedDate}</span>
+    const content = decryptContent(msg);
+
+    let contentDom = '';
+    if (content === false || (isFile && !content.startsWith('data:'))) {
+      contentDom += '<div><i>Cannot decrypt the message with current encryption settings.</i></div>';
+    } else {
+      contentDom += `<div>${isFile ? `<i>Added a file</i><br/><a role="button" target="_blank" href="${content}" class="bp3-button bp3-minimal bp3-small bp3-icon-download">Click to see</a>` : content}</div>`
+    }
+    contentDom += `
+      <span class="bp3-text-disabled">from</span>
+      <span class="bp3-text-muted">${from}</span>
+      <span class="bp3-text-disabled">at ${formattedDate}</span>
+    `;
+    if (from === stateData.loggedUser) {
+      dom = `
+      <div class="msg-row msg-outgoing">
+        <div class="msg bp3-callout bp3-intent-primary">
+          ${contentDom}
         </div>
       </div>
     `;
+    } else {
+      dom = `
+      <div class="msg-row msg-incoming">
+        <div class="msg bp3-callout">
+          ${contentDom}
+        </div>
+      </div>
+    `;
+    }
   }
   chatContentElement.insertAdjacentHTML('beforeend', dom);
   chatContentElement.scrollTop = chatContentElement.scrollHeight - chatContentElement.clientHeight;
@@ -293,6 +369,12 @@ actionButtons.unlockEncryption.forEach((button) => {
   };
 });
 
+actionButtons.sendFile.forEach((button) => {
+  button.onclick = () => {
+    sendCurrentFile();
+  };
+});
+
 inputs.newMsg.addEventListener('input', onNewMsgChanged);
 
 inputs.newMsg.addEventListener('keydown', (e) => {
@@ -307,6 +389,14 @@ inputs.username.addEventListener('keydown', (e) => {
   if (e.keyCode === 13) {
     loginUser();
     inputs.username.value = '';
+  }
+});
+
+inputs.newMsgFile.addEventListener('change', () => {
+  if (inputs.newMsgFile.files[0]) {
+    updateState('file-selected');
+  } else {
+    updateState('file-not-selected');
   }
 });
 
