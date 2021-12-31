@@ -133,7 +133,7 @@ window.updateView = (state) => {
 const encryptContent = (content) => {
   switch (stateData.encryption?.algorithm) {
     case 'sha256':
-      return CryptoJS.SHA256(content);
+      return CryptoJS.SHA256(content).toString();
     case 'spn':
       return CryptoJS.AES.encrypt(content, stateData.encryption.secretKey).toString();
     default:
@@ -192,6 +192,7 @@ const sendCurrentMessage = () => {
     return;
   }
   updateState('message-sending');
+  console.log('sending', { content: stateData.newMsgCiphertext });
   wsClient.send(JSON.stringify({ content: stateData.newMsgCiphertext }));
 };
 
